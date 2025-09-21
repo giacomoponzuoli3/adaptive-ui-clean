@@ -278,9 +278,9 @@ class OverlayRenderer:
     
 if __name__ == "__main__":
     detector = SaliencyDetector()
-    frame_path = Path("data") / "video_frames" / "loc3_script2_seq7_rec1" / "frame-10.jpg"
+    frame_path = Path("data") / "video_frames_outdoor" / "loc3_script2_seq7_rec1" / "frame-10.jpg"
     frame = Image.open(frame_path)
-    eye_gaze_path = Path("data") / "eye_gaze_coords.csv"
+    eye_gaze_path = Path("data") / "eye_gaze_coords_outdoor.csv"
     eye_gazes = pd.read_csv(eye_gaze_path)
 
     task = 2

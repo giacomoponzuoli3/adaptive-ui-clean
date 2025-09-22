@@ -298,7 +298,7 @@ class SaliencyDetector:
 
     @staticmethod
     def _get_frame_id(frame_path: Path):
-        return frame_path.stem.split("-")[1] 
+        return frame_path.stem.split("_")[1] 
         
     @staticmethod
     def _get_eye_gaze_loc(eye_gazes: pd.DataFrame, video_id: str, frame_id: str):

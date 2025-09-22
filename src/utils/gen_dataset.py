@@ -29,16 +29,19 @@ class DatasetGenerator:
         video_path: Path,
         detector,
         task=2,
-        test_size=0.3
+        val_size=0.2,
+        test_size=0.1
     ):
         self.processed_path = Path(processed_path)
         self.video_path = Path(video_path)
         self.task = task
+        self.val_size = val_size
         self.test_size = test_size
         self.instance_generator = InstanceGenerator(detector)
         
         self.videos = self._get_videos()
-        self.train_videos, self.test_videos = self._split_videos()
+        self.train_videos, self.val_videos, self.test_videos = self._split_videos()
+        print(f"Found {len(self.videos)} videos: {len(self.train_videos)} train, {len(self.val_videos)} val, {len(self.test_videos)} test")
         
     def _get_videos(self):
         videos = [
@@ -48,16 +51,22 @@ class DatasetGenerator:
         return videos
     
     def _split_videos(self):
-        train, test = train_test_split(self.videos, test_size=self.test_size)
-        return train, test
+        # Prima split per test
+        train_val, test = train_test_split(self.videos, test_size=self.test_size, random_state=42)
+        # Poi split per validation
+        val_relative = self.val_size / (1 - self.test_size)
+        train, val = train_test_split(train_val, test_size=val_relative, random_state=42)
+        return train, val, test
     
     def generate_dataset(self, split="train", eye_gaze_data=None, save_metadata_path=None, sample_size=20):
         if split == "train":
             videos = self.train_videos
+        elif split == "val":
+            videos = self.val_videos
         elif split == "test":
             videos = self.test_videos
         else:
-            raise ValueError(f"Invalid split '{split}'. Use 'train' or 'test'.")
+            raise ValueError(f"Invalid split '{split}'. Use 'train' or 'val' or 'test'.")
         
         dataset = []
         
@@ -104,7 +113,7 @@ class DatasetGenerator:
 if __name__ == "__main__":
    
     processed_path = Path("/content") / "adaptive-ui-clean" / "data" / "generated_overlays"
-    video_path = Path("/content") / "adaptive-ui-clean" / "data" / "video_frames"
+    video_path = Path("/content") / "adaptive-ui-clean" / "data" / "video_frames_outdoor"
     eye_gaze_path = Path("/content") / "adaptive-ui-clean" / "data" / "eye_gaze_coords_outdoor.csv"
     eye_gazes = pd.read_csv(eye_gaze_path)
 
@@ -123,6 +132,13 @@ if __name__ == "__main__":
         eye_gaze_data=eye_gazes,
         #save_metadata_path=f"data/train-task-{task_id}.jsonl"
         save_metadata_path=f"/content/adaptive-ui-clean/data/train-{task_id}.jsonl"
+    )
+
+    # Generate val dataset
+    dataset_gen.generate_dataset(
+        split="val",
+        eye_gaze_data=eye_gazes,
+        save_metadata_path=f"/content/adaptive-ui-clean/data/val-{task_id}.jsonl"
     )
 
     # Uncomment to generate test set

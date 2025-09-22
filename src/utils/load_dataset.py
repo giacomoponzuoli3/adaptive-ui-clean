@@ -1,8 +1,8 @@
 from datasets import load_dataset
 from src.utils.questions import *
 
-def load_data(train_path, test_path):
-    data_files = {"train": train_path, "test": test_path}
+def load_data(train_path, test_path, val_path):
+    data_files = {"train": train_path, "test": test_path, "val": val_path}
     dataset = load_dataset("json", data_files=data_files)
     print("Successfully loaded dataset")
     return dataset 
@@ -72,12 +72,13 @@ def format_data(task, sample, question_type="structured", add_label=True):
     else:
         raise ValueError("Incorrect task entered.")
 
-def preprocess_data(task, train_dataset, test_dataset, question_type="structured", add_label=True):
+def preprocess_data(task, train_dataset, test_dataset, val_dataset, question_type="structured", add_label=True):
     train_dataset = [format_data(task, sample, question_type, add_label) for sample in train_dataset]
+    val_dataset = [format_data(task, sample, question_type, add_label) for sample in val_dataset]
     test_dataset = [format_data(task, sample, question_type, add_label) for sample in test_dataset]
-    return train_dataset, test_dataset
+    return train_dataset, test_dataset, val_dataset
     
-def get_data(task, train_path, test_path, question_type="structured", add_label=True):
+def get_data(task, train_path, test_path, val_path, question_type="structured", add_label=True):
     """
     Loads and preprocesses training and test datasets.
 
@@ -101,8 +102,9 @@ def get_data(task, train_path, test_path, question_type="structured", add_label=
     test_dataset: list
         Preprocessed test dataset.
     """
-    dataset = load_data(train_path, test_path)
+    dataset = load_data(train_path, test_path, val_path)
     train_dataset = dataset["train"]
+    val_dataset = dataset["val"]
     test_dataset = dataset["test"]
-    train_dataset, test_dataset = preprocess_data(task, train_dataset, test_dataset, question_type, add_label)
-    return train_dataset, test_dataset
+    train_dataset, test_dataset = preprocess_data(task, train_dataset, test_dataset, val_dataset, question_type, add_label)
+    return train_dataset, test_dataset, val_dataset

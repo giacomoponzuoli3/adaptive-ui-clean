@@ -207,6 +207,7 @@ def parse_args():
     parser.add_argument("--task", type=str, default="visibility")
     parser.add_argument("--train_path", type=str, default="data/train-visibility.jsonl")
     parser.add_argument("--test_path", type=str, default="data/test-visibility.jsonl")
+    parser.add_argument("--val_path", type=str, default="data/val-visibility.jsonl")
     parser.add_argument("--config_path", type=str, default="src/training/training.yml")
     parser.add_argument("--output_dir", type=str, default="output")
     parser.add_argument("--model_id", type=str, default="Qwen/Qwen2.5-VL-7B-Instruct-AWQ")
@@ -216,7 +217,7 @@ def parse_args():
     parser.add_argument("--lora_rank", type=int, default=8)
     return parser.parse_args()
 
-def train(model_id, run_name, train_dataset, test_dataset, config_path, min_patches, max_patches, lora_rank):
+def train(model_id, run_name, train_dataset, val_dataset, config_path, min_patches, max_patches, lora_rank):
     """
     Runs the full training pipeline: clear memory, load model and processor, prepare training, and start training.
 
@@ -257,7 +258,7 @@ def train(model_id, run_name, train_dataset, test_dataset, config_path, min_patc
         model=model, 
         training_args=training_args,
         train_dataset=train_dataset,
-        eval_dataset=test_dataset,
+        eval_dataset=val_dataset,
         data_collator=collate_fn,
         peft_config=peft_config,
         processing_class=processor.tokenizer,
@@ -266,6 +267,7 @@ def train(model_id, run_name, train_dataset, test_dataset, config_path, min_patc
     trainer.train()
     trainer.save_model(training_args.output_dir)
 
+    return trainer
 
 def main():
     """Main training pipeline"""
@@ -273,6 +275,7 @@ def main():
     task = args.task
     train_path = args.train_path
     test_path = args.test_path
+    val_path = args.val_path
     config_path = args.config_path
     output_dir = args.output_dir
     model_id = args.model_id
@@ -281,8 +284,14 @@ def main():
     max_patches = args.max_patches
     lora_rank = args.lora_rank
 
-    train_dataset, test_dataset = get_data(task, train_path, test_path)
-    train(model_id, run_name, train_dataset, test_dataset, config_path, min_patches, max_patches, lora_rank)
+    train_dataset, test_dataset, val_dataset = get_data(task, train_path, test_path, val_path)
+    trainer = train(model_id, run_name, train_dataset, val_dataset, config_path, min_patches, max_patches, lora_rank)
+
+    # Evaluate on the test set
+    trainer.eval_dataset = test_dataset
+    results = trainer.evaluate()
+    print(f"Test set results: {results}")
+
     
 if __name__ == "__main__":
     main()

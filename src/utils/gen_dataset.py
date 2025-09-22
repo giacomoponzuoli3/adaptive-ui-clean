@@ -103,9 +103,9 @@ class DatasetGenerator:
 
 if __name__ == "__main__":
    
-    processed_path = Path("data") / "generated_overlays"
-    video_path = Path("data") / "video_frames"
-    eye_gaze_path = Path("data") / "eye_gaze_coords.csv"
+    processed_path = Path("content") / "adaptive-ui-clean" / "data" / "generated_overlays"
+    video_path = Path("content") / "adaptive-ui-clean" / "data" / "video_frames"
+    eye_gaze_path = Path("content") / "adaptive-ui-clean" / "data" / "eye_gaze_coords_outdoor.csv"
     eye_gazes = pd.read_csv(eye_gaze_path)
 
     parser = argparse.ArgumentParser(description="Generate dataset with gaze overlays.")
@@ -122,7 +122,7 @@ if __name__ == "__main__":
         split="train",
         eye_gaze_data=eye_gazes,
         #save_metadata_path=f"data/train-task-{task_id}.jsonl"
-        save_metadata_path=f"data/train-{task_id}.jsonl"
+        save_metadata_path=f"content/adaptive-ui-clean/data/train-{task_id}.jsonl"
     )
 
     # Uncomment to generate test set
@@ -130,5 +130,5 @@ if __name__ == "__main__":
         split="test",
         eye_gaze_data=eye_gazes,
         #save_metadata_path=f"data/test-task-{task_id}.jsonl"
-        save_metadata_path=f"data/test-{task_id}.jsonl"
+        save_metadata_path=f"content/adaptive-ui-clean/data/test-{task_id}.jsonl"
     ) 

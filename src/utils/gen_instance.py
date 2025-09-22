@@ -111,7 +111,8 @@ class InstanceGenerator:
         gaze_x, gaze_y = SaliencyDetector._get_eye_gaze_loc(eye_gazes, video_id, frame_id)
         if gaze_x is None and gaze_y is None:
             return img 
-            
+        
+
         # Draw small blue circle for gaze point
         radius = 30
         left_up = (gaze_x - radius, gaze_y - radius)
@@ -122,11 +123,11 @@ class InstanceGenerator:
 
     @staticmethod
     def _get_video_id(frame_path: Path):
-        return frame_path.parts[2]
+        return frame_path.parts[5]
 
     @staticmethod
     def _get_frame_id(frame_path: Path):
-        return frame_path.stem.split("-")[1] 
+        return frame_path.stem.split("_")[1] 
         
 class ImageScorer:
     """
@@ -238,8 +239,8 @@ class OverlayRenderer:
         self.step_size = step_size
 
         cwd = Path.cwd()  # Current working directory as a Path object
-        light_path = cwd / "src" / "utils" / "ui_elements" / f"email-light.png"
-        dark_path = cwd / "src" / "utils" / "ui_elements" / f"email-dark.png"
+        light_path = cwd / "adaptive-ui-clean" / "src" / "utils" / "ui_elements" / f"email-light.png"
+        dark_path = cwd / "adaptive-ui-clean" / "src" / "utils" / "ui_elements" / f"email-dark.png"
         self.light_overlay = Image.open(light_path).convert("RGBA")
         self.dark_overlay = Image.open(dark_path).convert("RGBA")
 

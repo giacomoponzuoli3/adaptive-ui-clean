@@ -75,7 +75,8 @@ class InstanceGenerator:
         elif task_id == 3:
             save_name = f"frame-{frame_id}-{int(score)}.png"
 
-        output_dir_path = f"/content/adaptive-ui-clean/data/generated_overlays/task_{task_id}/{video_id}"
+        #output_dir_path = f"/content/adaptive-ui-clean/data/generated_overlays/task_{task_id}/{video_id}"
+        output_dir_path = f"/kaggle/working/adaptive-ui-clean/data/generated_overlays/task_{task_id}/{video_id}"
         output_dir = Path(output_dir_path)
         output_dir.mkdir(parents=True, exist_ok=True)
         save_path = output_dir / save_name
@@ -280,9 +281,11 @@ class OverlayRenderer:
     
 if __name__ == "__main__":
     detector = SaliencyDetector()
-    frame_path = Path("/content") / "adaptive-ui-clean" / "data" / "video_frames_outdoor" / "recording_1013143887256571" / "frame_10.png"
+    #frame_path = Path("/content") / "adaptive-ui-clean" / "data" / "video_frames_outdoor" / "recording_1013143887256571" / "frame_10.png"
+    frame_path = Path("/kaggle") / "working" / "adaptive-ui-clean" / "data" / "video_frames_outdoor" / "recording_1013143887256571" / "frame_10.png"
     frame = Image.open(frame_path)
-    eye_gaze_path = Path("/content") / "adaptive-ui-clean" / "data" / "eye_gaze_coords_outdoor.csv"
+    #eye_gaze_path = Path("/content") / "adaptive-ui-clean" / "data" / "eye_gaze_coords_outdoor.csv"
+    eye_gaze_path = Path("/kaggle") / "working" / "adaptive-ui-clean" / "data" / "eye_gaze_coords_outdoor.csv"
     eye_gazes = pd.read_csv(eye_gaze_path)
 
     task = 2

@@ -125,7 +125,7 @@ class InstanceGenerator:
 
     @staticmethod
     def _get_video_id(frame_path: Path):
-        return frame_path.parts[5]
+        return frame_path.parts[6]
 
     @staticmethod
     def _get_frame_id(frame_path: Path):

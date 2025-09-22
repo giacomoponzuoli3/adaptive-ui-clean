@@ -74,7 +74,7 @@ class InstanceGenerator:
         elif task_id == 3:
             save_name = f"frame-{frame_id}-{int(score)}.png"
 
-        output_dir_path = f"data/generated_overlays/task_{task_id}/{video_id}"
+        output_dir_path = f"/content/adaptive-ui-clean/data/generated_overlays/task_{task_id}/{video_id}"
         output_dir = Path(output_dir_path)
         output_dir.mkdir(parents=True, exist_ok=True)
         save_path = output_dir / save_name

@@ -70,7 +70,8 @@ class InstanceGenerator:
         output_frame = self._plot_eye_gaze(frame_arr, eye_gazes, video_id, frame_id)
 
         if task_id == 1 or task_id == 2:
-            save_name = f"frame-{frame_id}-{int(score)}-{label}.png"
+            #save_name = f"frame-{frame_id}-{int(score)}-{label}.png"
+            save_name = f"frame-{frame_id}.png"
         elif task_id == 3:
             save_name = f"frame-{frame_id}-{int(score)}.png"
 

@@ -146,12 +146,6 @@ def main():
     model_id = args.model_id
     question_type = args.question_type
 
-    token = os.environ.get("HUGGINGFACE_HUB_TOKEN")
-    if token:
-        login(token=token)
-    else:
-        raise RuntimeError("Manca HUGGINGFACE_HUB_TOKEN")
-    
     train_dataset, test_dataset, val_dataset = get_data(task, train_path, test_path, val_path, question_type, add_label=False)
     labels_map = load_labels(train_path)
     

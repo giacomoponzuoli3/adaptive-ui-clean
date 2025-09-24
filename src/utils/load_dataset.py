@@ -106,5 +106,5 @@ def get_data(task, train_path, test_path, val_path, question_type="structured", 
     train_dataset = dataset["train"]
     val_dataset = dataset["val"]
     test_dataset = dataset["test"]
-    train_dataset, test_dataset = preprocess_data(task, train_dataset, test_dataset, val_dataset, question_type, add_label)
+    train_dataset, test_dataset, val_dataset = preprocess_data(task, train_dataset, test_dataset, val_dataset, question_type, add_label)
     return train_dataset, test_dataset, val_dataset

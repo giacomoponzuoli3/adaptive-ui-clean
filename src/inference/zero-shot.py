@@ -106,6 +106,7 @@ def parse_args():
     parser.add_argument("--task", type=str, default="visibility")
     parser.add_argument("--train_path", type=str, default="data/train-visibility.jsonl")
     parser.add_argument("--test_path", type=str, default="data/test-visibility.jsonl")
+    parser.add_argument("--val_path", type=str, default="data/val-visibility.jsonl")
     parser.add_argument("--model_id", type=str, default="Qwen/Qwen2.5-VL-32B-Instruct")
     parser.add_argument("--question_type", type=str, default="simple")
     return parser.parse_args()
@@ -116,13 +117,17 @@ def main():
     task = args.task
     train_path = args.train_path
     test_path = args.test_path
+    val_path = args.val_path
     model_id = args.model_id
     question_type = args.question_type
 
-    train_dataset, test_dataset = get_data(task, train_path, test_path, question_type, add_label=False)
+    train_dataset, test_dataset, val_dataset = get_data(task, train_path, test_path, val_path, question_type, add_label=False)
     labels_map = load_labels(train_path)
-  
+    
+    # predict on train set because it's bigger than val and test
     labels, preds = predict(model_id, train_dataset, labels_map, max_examples=200)
+
+    # metrics
     accuracy = accuracy_score(labels, preds)
     recall = recall_score(labels, preds, pos_label='yes')
     precision = precision_score(labels, preds, pos_label='yes')

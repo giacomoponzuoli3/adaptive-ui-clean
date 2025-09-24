@@ -145,6 +145,7 @@ def predict(model_id, dataset, labels_map, max_examples=50):
         original_img_path = example[1]["content"][0]["image"]  
         overlayed_img_path = example[1]["content"][1]["image"]
 
+        # print into for debugging
         print(original_img_path)
         print(overlayed_img_path)
         

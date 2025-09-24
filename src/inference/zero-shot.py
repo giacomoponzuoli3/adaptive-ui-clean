@@ -11,23 +11,52 @@ on custom datasets, without fine-tuning, to assess baseline performance before
 task-specific training.
 """
 
+import io
 import json
 import torch
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 from src.utils.load_dataset import get_data
 from src.utils.seed import set_seed
-from transformers import pipeline
+from huggingface_hub import HfFileSystem
+from PIL import Image
+from transformers import pipeline, BitsAndBytesConfig
 import argparse
 import random
-from huggingface_hub import login
-import os
 
 HF_DATASET_REPO = "giacomoponzuoli3/adaptive-ui-outdoor-visibilty"
 
+set_seed()
+# To read images directly from the Hub without downloading the entire dataset
+fs = HfFileSystem()  
+
+
+def _map_jsonl_to_hf(sfx: str) -> str:
+    """
+    Adatta i path salvati nei JSONL alla struttura reale della repo HF.
+    Adapts paths saved in JSONL files to the actual structure of the HF repo.
+    In the JSONL files: generated_overlays/task_2/...
+    In HF: task_2/...
+    """
+    if sfx.startswith("generated_overlays/task_2/"):
+        sfx = sfx.replace("generated_overlays/task_2/", "task_2/", 1)
+
+    return sfx
+
+def open_image_from_hub(local_path: str) -> Image.Image:
+    """Open an image directly from the HF using a local path saved in the JSONL files"""
+    
+    sfx = _suffix_after_data(local_path) 
+    hfpath = f"hf://datasets/{HF_DATASET_REPO}/{sfx}"
+    
+    with fs.open(hfpath, "rb") as f:
+        return Image.open(io.BytesIO(f.read())).convert("RGB")
+
+
 def _suffix_after_data(local_path: str) -> str:
-    # take all after "/data/"
+    """Return the part after '/data/' from a local path saved in the JSONL files"""
+
     key = local_path.split("/data/", 1)[-1]
-    return key
+    return _map_jsonl_to_hf(key)
 
 def to_hf_url(local_or_suffix: str) -> str:
     # accept either a local path or already the suffix
@@ -37,8 +66,6 @@ def to_hf_url(local_or_suffix: str) -> str:
         suffix = local_or_suffix.lstrip("/")
     return f"https://huggingface.co/datasets/{HF_DATASET_REPO}/tree/main/{suffix}"
 
-
-set_seed()
 
 def load_labels(jsonl_path):
     """
@@ -60,7 +87,8 @@ def load_labels(jsonl_path):
             entry = json.loads(line)
             raw_frame = entry["frames_file_names"][0]
             label = entry["label"]
-            key = _suffix_after_data(raw_frame)   # <--- indicizza con il suffix
+            # get the part after /data/ 
+            key = _suffix_after_data(raw_frame) 
             frame_to_label[key] = label
     return frame_to_label
 
@@ -91,28 +119,61 @@ def predict(model_id, dataset, labels_map, max_examples=50):
     examples = random.sample(dataset, k=max_examples)
     device = 0 if torch.cuda.is_available() else -1
     print(device)
-    pipe = pipeline("image-text-to-text", model=model_id, device=device)
+
+    # original pipeline -> Out of Memory
+    #pipe = pipeline("image-text-to-text", model=model_id, device=device)
+
+    # Compressed model with 4-bit quantization to fit in GPU memory    
+    bnb_cfg = BitsAndBytesConfig(
+      load_in_4bit=True,
+      bnb_4bit_quant_type="nf4",
+      bnb_4bit_use_double_quant=True,
+    )
+
+    # "Light" pipeline to avoid OOM
+    pipe = pipeline(
+        task="image-text-to-text",
+        model=model_id,
+        device_map="auto",                # offload automatico
+        dtype=torch.bfloat16,             # nuovo arg (sostituisce torch_dtype)
+        quantization_config=bnb_cfg,
+        offload_folder="/content/offload" # crea cartella su disco per offload
+    )
  
     for example in examples:
+        # Extract original paths (from JSONL)
+        original_img_path = example[1]["content"][0]["image"]  
+        overlayed_img_path = example[1]["content"][1]["image"]
 
-        example_path = example[1]["content"][0]["image"]
-        suffix = _suffix_after_data(example_path)
-        label = labels_map.get(suffix)
+        print(original_img_path)
+        print(overlayed_img_path)
         
-
+        # Label lookup via suffix consistent with load_labels
+        suffix = _suffix_after_data(original_img_path)
+        label = labels_map.get(suffix)
         if label is None:
-            print(example_path)
-            print(f"Warning: No label found for {example_path}, skipping...")
+            # if there's no label for this frame, skip
             continue
 
-        # Sostituisco l’immagine con l’URL alla Hub (streaming just-in-time)
-        example[1]["content"][0]["image"] = to_hf_url(suffix)
+        # Open images directly from the Hub (no URL)
+        try:
+            original = open_image_from_hub(original_img_path)
+            overlayed = open_image_from_hub(overlayed_img_path)
+        except Exception as e:
+            # If an image is missing or the path is wrong, skip the example
+            print(f"[WARN] Image doesn't find in the hub for {suffix}: {e}")
+            continue
 
-        labels.append(label)
-       
-        decoded = pipe(text=example, max_new_tokens=512)
+        # Inject PIL.images into the example (the pipeline accepts them)
+        example[1]["content"][0]["image"] = original
+        example[1]["content"][1]["image"] = overlayed
+
+        decoded = pipe(text=example, max_new_tokens=512) # tried also with 32, 16 tokens to reduce cost
         response = decoded[0]['generated_text'][2]["content"].lower()
         pred = "no" if "no, remove the element" in response else "yes"
+
+        # Append results to lists for metrics
+        labels.append(label)
         preds.append(pred)
 
     return labels, preds

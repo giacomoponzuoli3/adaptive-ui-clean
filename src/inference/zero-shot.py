@@ -19,6 +19,23 @@ from src.utils.seed import set_seed
 from transformers import pipeline
 import argparse
 import random
+from huggingface_hub import login
+
+HF_DATASET_REPO = "giacomoponzuoli3/adaptive-ui-outdoor-visibilty"
+
+def _suffix_after_data(local_path: str) -> str:
+    # take all after "/data/"
+    key = local_path.split("/data/", 1)[-1]
+    return key
+
+def to_hf_url(local_or_suffix: str) -> str:
+    # accept either a local path or already the suffix
+    if "/data/" in local_or_suffix:
+        suffix = _suffix_after_data(local_or_suffix)
+    else:
+        suffix = local_or_suffix.lstrip("/")
+    return f"https://huggingface.co/datasets/{HF_DATASET_REPO}/tree/main/{suffix}"
+
 
 set_seed()
 
@@ -42,7 +59,8 @@ def load_labels(jsonl_path):
             entry = json.loads(line)
             raw_frame = entry["frames_file_names"][0]
             label = entry["label"]
-            frame_to_label[raw_frame] = label
+            key = _suffix_after_data(raw_frame)   # <--- indicizza con il suffix
+            frame_to_label[key] = label
     return frame_to_label
 
 def predict(model_id, dataset, labels_map, max_examples=50):
@@ -77,13 +95,19 @@ def predict(model_id, dataset, labels_map, max_examples=50):
     for example in examples:
 
         example_path = example[1]["content"][0]["image"]
-        label = labels_map.get(example_path)
-        labels.append(label)
+        suffix = _suffix_after_data(example_path)
+        label = labels_map.get(suffix)
+        
 
         if label is None:
             print(example_path)
             print(f"Warning: No label found for {example_path}, skipping...")
             continue
+
+        # Sostituisco l’immagine con l’URL alla Hub (streaming just-in-time)
+        example[1]["content"][0]["image"] = to_hf_url(suffix)
+
+        labels.append(label)
        
         decoded = pipe(text=example, max_new_tokens=512)
         response = decoded[0]['generated_text'][2]["content"].lower()
@@ -121,6 +145,8 @@ def main():
     model_id = args.model_id
     question_type = args.question_type
 
+    login(token="hf_...")  # o metti il token in un env var e leggilo
+    
     train_dataset, test_dataset, val_dataset = get_data(task, train_path, test_path, val_path, question_type, add_label=False)
     labels_map = load_labels(train_path)
     

@@ -20,6 +20,7 @@ from transformers import pipeline
 import argparse
 import random
 from huggingface_hub import login
+import os
 
 HF_DATASET_REPO = "giacomoponzuoli3/adaptive-ui-outdoor-visibilty"
 
@@ -145,7 +146,11 @@ def main():
     model_id = args.model_id
     question_type = args.question_type
 
-    login(token="hf_...")  # o metti il token in un env var e leggilo
+    token = os.environ.get("HUGGINGFACE_HUB_TOKEN")
+    if token:
+        login(token=token)
+    else:
+        raise RuntimeError("Manca HUGGINGFACE_HUB_TOKEN")
     
     train_dataset, test_dataset, val_dataset = get_data(task, train_path, test_path, val_path, question_type, add_label=False)
     labels_map = load_labels(train_path)

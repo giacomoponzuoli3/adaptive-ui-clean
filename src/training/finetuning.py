@@ -89,7 +89,7 @@ def get_trainer(model, training_args, train_dataset, eval_dataset, data_collator
         Initialised trainer ready for training.
     """
     trainer = SFTTrainer(
-        model=model,
+        model=model, 
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
@@ -254,6 +254,7 @@ def train(model_id, run_name, train_dataset, val_dataset, config_path, min_patch
 
     collate_fn = create_collate_fn(processor)
 
+    # 
     trainer = get_trainer(
         model=model, 
         training_args=training_args,

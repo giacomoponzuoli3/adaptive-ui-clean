@@ -134,10 +134,10 @@ def predict(model_id, dataset, labels_map, max_examples=50):
     pipe = pipeline(
         task="image-text-to-text",
         model=model_id,
-        device_map="auto",                # offload automatico
-        dtype=torch.bfloat16,             # nuovo arg (sostituisce torch_dtype)
+        device_map="auto",                
+        dtype=torch.bfloat16, 
         quantization_config=bnb_cfg,
-        offload_folder="/content/offload" # crea cartella su disco per offload
+        offload_folder="/content/offload"
     )
  
     for example in examples:
